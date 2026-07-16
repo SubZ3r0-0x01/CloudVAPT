@@ -4,6 +4,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.3 (2026-07-16)
+
+### Added
+- Automated Kubernetes RBAC Misconfiguration Exploitation Tool
+
 ## Version 1.0.2 (2026-07-16)
 
 ### Added
