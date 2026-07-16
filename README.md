@@ -2,6 +2,12 @@
 
 Cloud Vulnerability Assessment and Penetration Testing Tools
 
+
+## Version 1.0.1 (2026-07-16)
+
+### Added
+- Cross-Account IAM Role Trust Exploitation Tool
+
 ## Features
 - Automated cloud security scanning
 - IAM privilege escalation detection
