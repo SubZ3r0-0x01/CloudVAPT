@@ -3,6 +3,12 @@
 Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
+
+## Version 1.0.2 (2026-07-16)
+
+### Added
+- Automated Cloud Metadata Service Exploitation Simulator
+
 ## Version 1.0.1 (2026-07-16)
 
 ### Added
