@@ -7,6 +7,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.6 (2026-07-17)
+
+### Added
+- Automated Cloud Serverless Application Security Scanner
+
 ## Version 1.0.5 (2026-07-17)
 
 ### Added
