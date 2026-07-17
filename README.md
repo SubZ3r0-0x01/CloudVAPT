@@ -12,6 +12,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.11 (2026-07-18)
+
+### Added
+- Automated Secrets Detection in Cloud Storage and Code Repositories
+
 ## Version 1.0.10 (2026-07-17)
 
 ### Added
