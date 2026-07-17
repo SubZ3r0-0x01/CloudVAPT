@@ -11,6 +11,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.10 (2026-07-17)
+
+### Added
+- Automated Cloud Database Security Assessment
+
 ## Version 1.0.9 (2026-07-17)
 
 ### Added
