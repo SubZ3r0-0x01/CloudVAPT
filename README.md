@@ -6,6 +6,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.5 (2026-07-17)
+
+### Added
+- Cloud Network Security Group Misconfiguration Detection
+
 ## Version 1.0.4 (2026-07-17)
 
 ### Added
