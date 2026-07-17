@@ -10,6 +10,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.9 (2026-07-17)
+
+### Added
+- Automated Cloud Container Image Vulnerability Scanner
+
 ## Version 1.0.8 (2026-07-17)
 
 ### Added
