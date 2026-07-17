@@ -8,6 +8,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.7 (2026-07-17)
+
+### Added
+- Automated Cross-Account IAM Role Trust Policy Analyzer
+
 ## Version 1.0.6 (2026-07-17)
 
 ### Added
