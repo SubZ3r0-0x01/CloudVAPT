@@ -14,6 +14,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.13 (2026-07-18)
+
+### Added
+- Automated Serverless Function Security Assessment
+
 ## Version 1.0.12 (2026-07-18)
 
 ### Added
