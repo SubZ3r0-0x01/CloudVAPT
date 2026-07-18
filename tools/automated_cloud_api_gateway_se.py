@@ -1,77 +1,87 @@
-"""
-Automated Cloud API Gateway Security Testing
-A tool that automatically scans and tests cloud API gateway configurations (AWS API Gateway, Azure API Management, GCP Cloud Endpoints) for vulnerabilities such as public access, missing authentication, rate limiting weaknesses, and injection flaws. It performs both static configuration analysis and dynamic testing with malicious payloads to identify exploitable security gaps.
-"""
-
 import json
-from datetime import datetime
-from typing import Dict, List, Optional
+import time
+import hashlib
+import hmac
+import base64
+import urllib.parse
+from collections import defaultdict
+from typing import List, Dict, Optional, Any
+
+import requests
 
 
-class AutomatedCloudApiGatewaySecurityTesting:
-    """Main class for Automated Cloud API Gateway Security Testing"""
-    
-    def __init__(self, config: Optional[Dict] = None):
-        """Initialize the scanner"""
-        self.config = config or {}
-        self.results = []
-        self.timestamp = datetime.now().isoformat()
-    
-    def scan(self, target: str) -> Dict:
-        """Perform the main scan"""
-        print(f"Scanning {target}...")
-        
-        result = {
-            "target": target,
-            "timestamp": self.timestamp,
-            "status": "completed",
-            "findings": self._analyze(target)
+class CloudAPIGatewaySecurityAssessment:
+    """
+    Automated Cloud API Gateway Security Assessment.
+
+    Scans AWS API Gateway, Azure API Management, and GCP Cloud Endpoints
+    for common API vulnerabilities such as injection, misconfigured authentication,
+    excessive data exposure, and improper rate limiting. Also validates API endpoints
+    against OWASP API Security Top 10 risks.
+    """
+
+    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
+        """
+        Initialize the scanner with optional global configuration.
+
+        Args:
+            config: Optional dictionary with default settings (e.g., timeouts, user-agent).
+        """
+        self.targets: List[Dict[str, Any]] = []
+        self.results: List[Dict[str, Any]] = []
+        self.config: Dict[str, Any] = config or {}
+
+        # Default scanning settings
+        self.config.setdefault('timeout', 10)
+        self.config.setdefault('user_agent', 'CloudAPIGatewaySecurityScanner/1.0')
+        self.config.setdefault('injection_payloads', [
+            "' OR '1'='1",
+            "'; DROP TABLE users--",
+            "<script>alert(1)</script>",
+            "${7*7}",
+            "| cat /etc/passwd",
+        ])
+
+    def add_target(
+        self,
+        provider: str,
+        base_url: str,
+        api_key: Optional[str] = None,
+        auth_token: Optional[str] = None,
+        additional_headers: Optional[Dict[str, str]] = None,
+        rate_limit_threshold: int = 100,
+    ) -> None:
+        """
+        Register a cloud API gateway endpoint for scanning.
+
+        Args:
+            provider: Cloud provider ('aws', 'azure', 'gcp').
+            base_url: Base URL of the API (e.g., https://api.example.com).
+            api_key: API key if required by the gateway.
+            auth_token: Bearer token or other credentials.
+            additional_headers: Custom headers to include in requests.
+            rate_limit_threshold: Number of rapid requests to test rate limiting.
+        """
+        if provider not in ('aws', 'azure', 'gcp'):
+            raise ValueError(f"Unsupported provider: {provider}")
+
+        target = {
+            'provider': provider,
+            'base_url': base_url.rstrip('/'),
+            'api_key': api_key,
+            'auth_token': auth_token,
+            'additional_headers': additional_headers or {},
+            'rate_limit_threshold': rate_limit_threshold,
+            'session': requests.Session(),
         }
-        
-        self.results.append(result)
-        return result
-    
-    def _analyze(self, target: str) -> List[Dict]:
-        """Analyze the target"""
-        findings = []
-        
-        # TODO: Implement actual analysis logic
-        findings.append({
-            "type": "info",
-            "message": f"Analysis completed for {target}",
-            "severity": "low"
-        })
-        
-        return findings
-    
-    def generate_report(self, output_file: str = "report.json") -> str:
-        """Generate a JSON report"""
-        report = {
-            "tool": "Automated Cloud API Gateway Security Testing",
-            "timestamp": self.timestamp,
-            "total_scans": len(self.results),
-            "results": self.results
-        }
-        
-        with open(output_file, "w") as f:
-            json.dump(report, f, indent=2)
-        
-        print(f"Report saved to {output_file}")
-        return output_file
-    
-    def summary(self) -> Dict:
-        """Get a summary of all results"""
-        total_findings = sum(len(r.get("findings", [])) for r in self.results)
-        return {
-            "total_scans": len(self.results),
-            "total_findings": total_findings,
-            "timestamp": self.timestamp
-        }
 
+        # Prepare default headers based on provider
+        headers = target['additional_headers']
+        headers.setdefault('User-Agent', self.config['user_agent'])
 
-if __name__ == "__main__":
-    # Example usage
-    scanner = AutomatedCloudApiGatewaySecurityTesting()
-    result = scanner.scan("example.com")
-    scanner.generate_report()
-    print(json.dumps(scanner.summary(), indent=2))
+        if api_key:
+            if provider == 'aws':
+                headers['x-api-key'] = api_key
+            elif provider == 'azure':
+                headers['Ocp-Apim-Subscription-Key'] = api_key
+            elif provider == '
