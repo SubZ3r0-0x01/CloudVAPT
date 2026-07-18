@@ -13,6 +13,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.12 (2026-07-18)
+
+### Added
+- Automated Kubernetes RBAC and Pod Security Assessment
+
 ## Version 1.0.11 (2026-07-18)
 
 ### Added
