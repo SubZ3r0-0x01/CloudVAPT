@@ -1,87 +1,156 @@
 import json
-import time
-import hashlib
-import hmac
-import base64
-import urllib.parse
-from collections import defaultdict
-from typing import List, Dict, Optional, Any
+import sys
+import logging
+from typing import Dict, List, Optional, Any, Union
+from urllib.parse import urlparse
 
 import requests
 
+# Configure logger
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class CloudAPIGatewaySecurityAssessment:
+
+class AutomatedCloudAPIGatewaySecurityAssessment:
     """
-    Automated Cloud API Gateway Security Assessment.
-
-    Scans AWS API Gateway, Azure API Management, and GCP Cloud Endpoints
-    for common API vulnerabilities such as injection, misconfigured authentication,
-    excessive data exposure, and improper rate limiting. Also validates API endpoints
-    against OWASP API Security Top 10 risks.
+    Automated scanning and penetration testing of cloud API Gateway configurations.
+    Supports AWS API Gateway, Azure API Management, and GCP API Gateway.
+    Detects open endpoints, missing authentication, insecure API key handling,
+    excessive permissions, and logging gaps.
     """
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Initialize the scanner with optional global configuration.
+    # Common request ID headers used by cloud providers
+    REQUEST_ID_HEADERS = [
+        'x-request-id',
+        'x-amzn-requestid',
+        'x-ms-request-id',
+        'x-correlation-id',
+        'x-amz-apigw-id',
+        'x-cloud-trace-context',
+    ]
 
-        Args:
-            config: Optional dictionary with default settings (e.g., timeouts, user-agent).
-        """
-        self.targets: List[Dict[str, Any]] = []
-        self.results: List[Dict[str, Any]] = []
-        self.config: Dict[str, Any] = config or {}
+    # HTTP methods to test for excessive permissions
+    PERMISSION_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS', 'HEAD']
 
-        # Default scanning settings
-        self.config.setdefault('timeout', 10)
-        self.config.setdefault('user_agent', 'CloudAPIGatewaySecurityScanner/1.0')
-        self.config.setdefault('injection_payloads', [
-            "' OR '1'='1",
-            "'; DROP TABLE users--",
-            "<script>alert(1)</script>",
-            "${7*7}",
-            "| cat /etc/passwd",
-        ])
-
-    def add_target(
+    def __init__(
         self,
         provider: str,
-        base_url: str,
-        api_key: Optional[str] = None,
-        auth_token: Optional[str] = None,
-        additional_headers: Optional[Dict[str, str]] = None,
-        rate_limit_threshold: int = 100,
-    ) -> None:
+        endpoints: Optional[List[Dict[str, Any]]] = None,
+        timeout: int = 30,
+        verify_ssl: bool = True,
+    ):
         """
-        Register a cloud API gateway endpoint for scanning.
+        Initialize the scanner.
 
         Args:
             provider: Cloud provider ('aws', 'azure', 'gcp').
-            base_url: Base URL of the API (e.g., https://api.example.com).
-            api_key: API key if required by the gateway.
-            auth_token: Bearer token or other credentials.
-            additional_headers: Custom headers to include in requests.
-            rate_limit_threshold: Number of rapid requests to test rate limiting.
+            endpoints: Optional list of endpoint dictionaries. Each endpoint should have:
+                - 'url': str (required)
+                - 'method' (optional, default 'GET')
+                - 'expected_auth_type' (optional, e.g. 'api_key', 'oauth2', 'jwt')
+                - 'expected_api_key' (optional)
+                - 'logging_expected' (optional bool)
+            timeout: HTTP request timeout in seconds.
+            verify_ssl: Whether to verify SSL certificates.
         """
-        if provider not in ('aws', 'azure', 'gcp'):
-            raise ValueError(f"Unsupported provider: {provider}")
+        if provider.lower() not in ('aws', 'azure', 'gcp'):
+            raise ValueError("Provider must be one of 'aws', 'azure', 'gcp'")
+        self.provider = provider.lower()
+        self.endpoints = endpoints or []
+        self.timeout = timeout
+        self.verify_ssl = verify_ssl
+        self.results: List[Dict[str, Any]] = []
+        self.scan_complete = False
 
-        target = {
-            'provider': provider,
-            'base_url': base_url.rstrip('/'),
-            'api_key': api_key,
-            'auth_token': auth_token,
-            'additional_headers': additional_headers or {},
-            'rate_limit_threshold': rate_limit_threshold,
-            'session': requests.Session(),
+    def add_endpoint(self, endpoint: Dict[str, Any]) -> None:
+        """
+        Add an endpoint to the scan list.
+
+        Args:
+            endpoint: Dictionary with endpoint details (see __init__).
+        """
+        if 'url' not in endpoint:
+            raise ValueError("Endpoint must contain a 'url' field")
+        self.endpoints.append(endpoint)
+
+    def load_from_json(self, filepath: str) -> None:
+        """
+        Load endpoints from a JSON file.
+
+        The JSON file should contain an object or array of endpoint objects.
+        If it's an object, it should have an 'endpoints' key containing the array.
+
+        Args:
+            filepath: Path to JSON file.
+        """
+        with open(filepath, 'r') as f:
+            data = json.load(f)
+        if isinstance(data, dict):
+            data = data.get('endpoints', [])
+        if isinstance(data, list):
+            for ep in data:
+                self.add_endpoint(ep)
+        else:
+            raise ValueError("JSON file must contain a list or an object with 'endpoints' key")
+
+    def scan(self) -> List[Dict[str, Any]]:
+        """
+        Run all security tests on all endpoints.
+
+        Returns:
+            List of result dictionaries with findings.
+        """
+        self.results = []
+        for endpoint in self.endpoints:
+            url = endpoint.get('url')
+            if not url:
+                logger.warning("Skipping endpoint without URL")
+                continue
+            logger.info(f"Scanning endpoint: {url}")
+            endpoint_result = self._scan_endpoint(endpoint)
+            self.results.append(endpoint_result)
+        self.scan_complete = True
+        return self.results
+
+    def _scan_endpoint(self, endpoint: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Perform all security checks on a single endpoint.
+
+        Args:
+            endpoint: Endpoint dictionary.
+
+        Returns:
+            Dictionary containing findings for this endpoint.
+        """
+        url = endpoint['url']
+        method = endpoint.get('method', 'GET').upper()
+        findings = {
+            'url': url,
+            'method': method,
+            'provider': self.provider,
+            'authentication': None,
+            'api_key_handling': None,
+            'permissions': None,
+            'logging': None,
+            'errors': [],
         }
 
-        # Prepare default headers based on provider
-        headers = target['additional_headers']
-        headers.setdefault('User-Agent', self.config['user_agent'])
+        # Test authentication
+        try:
+            findings['authentication'] = self._test_authentication(url, method)
+        except Exception as e:
+            findings['errors'].append(f"Authentication test error: {e}")
 
+        # Test API key handling if an API key is expected
+        api_key = endpoint.get('expected_api_key')
         if api_key:
-            if provider == 'aws':
-                headers['x-api-key'] = api_key
-            elif provider == 'azure':
-                headers['Ocp-Apim-Subscription-Key'] = api_key
-            elif provider == '
+            try:
+                findings['api_key_handling'] = self._test_api_key_handling(
+                    url, method, api_key, endpoint.get('expected_auth_type')
+                )
+            except Exception as e:
+                findings['errors'].append(f"API key test error: {e}")
+        else:
+            findings['api_key_handling'] = {
+                'status': 'info',
+                'detail':
