@@ -23,6 +23,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.22 (2026-07-19)
+
+### Added
+- Automated Kubernetes Security Assessment
+
 ## Version 1.0.21 (2026-07-19)
 
 ### Added
