@@ -1,189 +1,235 @@
-import os
 import json
 import re
+import os
 import sys
 import logging
-from typing import List, Dict, Any, Optional
-from pathlib import Path
+from typing import Any, Dict, List, Optional, Union
+from copy import deepcopy
 
-try:
-    import requests
-except ImportError:
-    requests = None  # Not used but required to be present per spec
+import requests
 
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-
-class AutomatedCloudIaCSecurityScanner:
+class IaCSecurityScanner:
     """
-    Scans Terraform and CloudFormation templates for common security
-    misconfigurations, compliance violations, and insecure defaults.
-    Supports AWS, Azure, and GCP cloud providers.
+    Automated Cloud Infrastructure as Code (IaC) Security Scanner
+
+    Scans Terraform (.tf) and CloudFormation (.json) templates for security
+    misconfigurations, compliance violations (CIS benchmarks), and insecure patterns.
+    For Terraform, simple HCL parsing is performed via regular expressions.
+    CloudFormation templates must be provided as JSON.
+
+    Supports AWS, Azure, and GCP providers.
+
+    Example usage:
+        scanner = IaCSecurityScanner()
+        findings = scanner.scan('path/to/template.tf', provider='aws')
+        print(scanner.generate_report(format='json'))
     """
 
-    def __init__(self, rules: Optional[List[Dict[str, Any]]] = None,
-                 custom_rules_path: Optional[str] = None):
-        """
-        Initialize scanner with optional custom rules or path to rules JSON.
+    # Regex to extract Terraform resource blocks
+    RESOURCE_BLOCK_RE = re.compile(
+        r'resource\s+"(?P<type>[^"]+)"\s+"(?P<name>[^"]+)"\s*\{',
+        re.MULTILINE
+    )
 
-        :param rules: List of rule dictionaries.
-        :param custom_rules_path: Path to a JSON file containing rules.
+    def __init__(
+        self,
+        rules: Optional[Dict[str, Any]] = None,
+        rules_url: Optional[str] = None
+    ):
         """
-        self.rules = rules or self._load_default_rules()
-        if custom_rules_path:
-            self._load_custom_rules(custom_rules_path)
-        self.scanned_files = []
-        self.findings = []
+        Initialize the scanner with optional custom rules and remote rule endpoint.
 
-    def _load_default_rules(self) -> List[Dict[str, Any]]:
+        Args:
+            rules: Dictionary of custom rules to override defaults.
+            rules_url: URL to fetch additional rules (JSON format) at initialization.
         """
-        Load default security rules for AWS, Azure, and GCP.
-        Returns a list of rule dictionaries.
-        """
-        return [
-            # AWS
-            {
-                "id": "AWS-SG-001",
-                "provider": "aws",
-                "resource_type": "aws_security_group",
-                "pattern": "ingress.*cidr_blocks.*[\"']0\\.0\\.0\\.0/0[\"']",
-                "severity": "HIGH",
-                "description": "Security group allows inbound traffic from 0.0.0.0/0"
-            },
-            {
-                "id": "AWS-SG-002",
-                "provider": "aws",
-                "resource_type": "aws_security_group",
-                "pattern": "ingress.*ipv6_cidr_blocks.*[\"']::/0[\"']",
-                "severity": "HIGH",
-                "description": "Security group allows inbound traffic from ::/0"
-            },
-            {
-                "id": "AWS-EBS-001",
-                "provider": "aws",
-                "resource_type": "aws_ebs_volume",
-                "pattern": "encrypted\\s*=\\s*false",
-                "severity": "HIGH",
-                "description": "EBS volume is not encrypted"
-            },
-            {
-                "id": "AWS-S3-001",
-                "provider": "aws",
-                "resource_type": "aws_s3_bucket",
-                "pattern": "server_side_encryption_configuration",
-                "severity": "MEDIUM",
-                "description": "S3 bucket is missing server-side encryption configuration",
-                "negate": True
-            },
-            {
-                "id": "AWS-IAM-001",
-                "provider": "aws",
-                "resource_type": "aws_iam_policy",
-                "pattern": "Action\\s*=\\s*[\"']\\*[\"']",
-                "severity": "HIGH",
-                "description": "IAM policy allows all actions (*)"
-            },
-            {
-                "id": "AWS-IAM-002",
-                "provider": "aws",
-                "resource_type": "aws_iam_policy",
-                "pattern": "Resource\\s*=\\s*[\"']\\*[\"']",
-                "severity": "HIGH",
-                "description": "IAM policy allows all resources (*)"
-            },
-            {
-                "id": "AWS-RDS-001",
-                "provider": "aws",
-                "resource_type": "aws_db_instance",
-                "pattern": "publicly_accessible\\s*=\\s*true",
-                "severity": "HIGH",
-                "description": "RDS instance is publicly accessible"
-            },
-            # Azure
-            {
-                "id": "AZURE-NSG-001",
-                "provider": "azure",
-                "resource_type": "azurerm_network_security_rule",
-                "pattern": "source_address_prefixes\\s*=\\s*[\"']\\*[\"']",
-                "severity": "HIGH",
-                "description": "Network security rule allows traffic from any source (*)"
-            },
-            {
-                "id": "AZURE-STORAGE-001",
-                "provider": "azure",
-                "resource_type": "azurerm_storage_account",
-                "pattern": "enable_https_traffic_only\\s*=\\s*false",
-                "severity": "MEDIUM",
-                "description": "Storage account does not enforce HTTPS traffic"
-            },
-            {
-                "id": "AZURE-SQL-001",
-                "provider": "azure",
-                "resource_type": "azurerm_mssql_server",
-                "pattern": "public_network_access_enabled\\s*=\\s*true",
-                "severity": "HIGH",
-                "description": "SQL server allows public network access"
-            },
-            # GCP
-            {
-                "id": "GCP-FW-001",
-                "provider": "gcp",
-                "resource_type": "google_compute_firewall",
-                "pattern": "source_ranges\\s*=\\s*[\"']0\\.0\\.0\\.0/0[\"']",
-                "severity": "HIGH",
-                "description": "Firewall rule allows traffic from 0.0.0.0/0"
-            },
-            {
-                "id": "GCP-SQL-001",
-                "provider": "gcp",
-                "resource_type": "google_sql_database_instance",
-                "pattern": "require_ssl\\s*=\\s*false",
-                "severity": "HIGH",
-                "description": "Cloud SQL instance does not require SSL"
-            },
-            {
-                "id": "GCP-GCS-001",
-                "provider": "gcp",
-                "resource_type": "google_storage_bucket",
-                "pattern": "uniform_bucket_level_access\\s*=\\s*false",
-                "severity": "MEDIUM",
-                "description": "Storage bucket does not have uniform access control"
-            },
-        ]
+        self.rules = self._default_rules()
+        if rules:
+            self.rules.update(rules)
+        if rules_url:
+            try:
+                logger.info(f"Fetching rules from {rules_url}")
+                response = requests.get(rules_url, timeout=10)
+                response.raise_for_status()
+                remote_rules = response.json()
+                if isinstance(remote_rules, dict):
+                    self.rules.update(remote_rules)
+                    logger.info(f"Loaded {len(remote_rules)} remote rules")
+                else:
+                    logger.warning("Remote rules are not a dict, ignoring")
+            except Exception as e:
+                logger.error(f"Failed to fetch rules from {rules_url}: {e}")
 
-    def _load_custom_rules(self, path: str) -> None:
-        """
-        Load custom rules from a JSON file.
+        self.findings: List[Dict[str, Any]] = []
 
-        :param path: Path to JSON rules file.
+    def load_file(self, filepath: str) -> Dict[str, Any]:
+        """
+        Load and parse an IaC template file.
+
+        Supports Terraform (.tf) and CloudFormation (.json) files.
+        For .tf files, a simple parser extracts resource blocks.
+        For .json files, the entire JSON structure is returned.
+
+        Args:
+            filepath: Path to the template file.
+
+        Returns:
+            Dictionary containing parsed resources and metadata.
+
+        Raises:
+            FileNotFoundError: If file does not exist.
+            ValueError: If file format is unsupported or parsing fails.
+        """
+        if not os.path.isfile(filepath):
+            raise FileNotFoundError(f"File not found: {filepath}")
+
+        _, ext = os.path.splitext(filepath)
+        ext = ext.lower()
+
+        with open(filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        if ext == '.tf':
+            return self._parse_terraform(content)
+        elif ext == '.json':
+            return self._parse_cloudformation(content)
+        else:
+            raise ValueError(f"Unsupported file extension: {ext}. Use .tf or .json")
+
+    def _parse_terraform(self, content: str) -> Dict[str, Any]:
+        """
+        Parse Terraform HCL content using regex to extract resource blocks.
+
+        Args:
+            content: Raw HCL content.
+
+        Returns:
+            Dictionary with key 'resources' containing a list of resource dicts.
+        """
+        resources = []
+        lines = content.splitlines()
+        # Simple state machine to capture block content
+        # For production, consider using a proper HCL parser;
+        # this regex-based version works for simple cases.
+        stack = []  # tracks braces
+        current_resource = None
+        for i, line in enumerate(lines):
+            # Try to match resource declaration
+            match = self.RESOURCE_BLOCK_RE.search(line)
+            if match:
+                # Check that we are not inside another block
+                if not stack:
+                    current_resource = {
+                        'type': match.group('type'),
+                        'name': match.group('name'),
+                        'attributes': {},
+                        'raw_block': ''
+                    }
+                    stack.append('{')
+                    # capture the line as start of block
+                    current_resource['raw_block'] = line + '\n'
+                else:
+                    logger.warning(f"Nested resource declaration at line {i+1}, ignoring")
+                continue
+
+            if current_resource is None:
+                continue
+
+            # Track braces to know when the block ends
+            open_braces = line.count('{')
+            close_braces = line.count('}')
+            for _ in range(open_braces):
+                stack.append('{')
+            for _ in range(close_braces):
+                if stack:
+                    stack.pop()
+
+            # Append line to raw_block
+            current_resource['raw_block'] += line + '\n'
+
+            # If stack is empty and we are in a resource, it's complete
+            if not stack and current_resource:
+                self._extract_terraform_attributes(current_resource)
+                resources.append(current_resource)
+                current_resource = None
+
+        # In case file ends inside block (malformed)
+        if current_resource is not None:
+            logger.warning("Unterminated resource block at end of file")
+            self._extract_terraform_attributes(current_resource)
+            resources.append(current_resource)
+
+        return {'resources': resources}
+
+    def _extract_terraform_attributes(self, resource: Dict[str, Any]) -> None:
+        """
+        Extract key=value attributes from raw block text.
+
+        Simple regex approach for demonstration.
+        """
+        pattern = re.compile(r'^\s*(\w+)\s*=\s*["\']?(.*?)["\']?\s*$', re.MULTILINE)
+        for match in pattern.finditer(resource['raw_block']):
+            key = match.group(1)
+            val = match.group(2)
+            # For list/map values, more complex parsing would be needed.
+            # This is a simplified version.
+            resource['attributes'][key] = val
+
+    def _parse_cloudformation(self, content: str) -> Dict[str, Any]:
+        """
+        Parse CloudFormation JSON content.
+
+        Args:
+            content: JSON string.
+
+        Returns:
+            Dictionary with keys 'resources' and full parsed template.
+
+        Raises:
+            ValueError: If JSON is invalid.
         """
         try:
-            with open(path, 'r') as f:
-                custom_rules = json.load(f)
-                if isinstance(custom_rules, list):
-                    self.rules.extend(custom_rules)
-                elif isinstance(custom_rules, dict):
-                    self.rules.append(custom_rules)
-                logger.info(f"Loaded {len(custom_rules)} custom rule(s) from {path}")
-        except (FileNotFoundError, json.JSONDecodeError) as e:
-            logger.error(f"Failed to load custom rules from {path}: {e}")
+            template = json.loads(content)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON file: {e}")
 
-    def scan(self, paths: List[str]) -> List[Dict[str, Any]]:
-        """
-        Scan one or more IaC files for security issues.
+        resources = []
+        cfn_resources = template.get('Resources', {})
+        for logical_id, resource_spec in cfn_resources.items():
+            resources.append({
+                'logical_id': logical_id,
+                'type': resource_spec.get('Type'),
+                'properties': resource_spec.get('Properties', {})
+            })
 
-        :param paths: List of file paths to scan.
-        :return: List of findings.
+        return {'resources': resources, 'template': template}
+
+    def _default_rules(self) -> Dict[str, Any]:
         """
-        self.findings = []
-        for path in paths:
-            if not os.path.isfile(path):
-                logger.warning(f"Skipping non-file: {path}")
-                continue
-            file_ext = Path(path).suffix.lower()
-            logger.info(f"Scanning {path}...")
-            try:
-                if file_ext == '.tf':
-                    findings = self._scan_terraform(path)
-                elif file_ext in ('.json', '.yaml', '.yml'):
+        Define default security rules covering common misconfigurations.
+
+        Returns a dictionary where each key is a rule ID and value is a dict:
+            - id: str
+            - name: str
+            - description: str
+            - severity: str (HIGH, MEDIUM, LOW)
+            - provider: str (aws, azure, gcp)
+            - applies_to: function(resource, provider) -> bool (True if rule matches)
+        """
+        rules = {}
+
+        # AWS: Security group open to 0.0.0.0/0
+        rules['AWS-SG-OPEN-ALL'] = {
+            'id': 'AWS-SG-OPEN-ALL',
+            'name': 'Security group allows inbound traffic from 0.0.0.0/0',
+            'description': 'Avoid security groups allowing inbound traffic from any IP.',
+            'severity': 'HIGH',
+            'provider': 'aws',
+            'applies_to': lambda resource, provider: (
+                provider == 'aws' and
+                resource.get('type', '').endswith('aws_security_group') and
+                'cidr_blocks' in resource.get('attributes', {}) and
+                '
