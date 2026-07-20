@@ -28,6 +28,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.27 (2026-07-20)
+
+### Added
+- Automated Container Security Assessment (Docker & Kubernetes)
+
 ## Version 1.0.26 (2026-07-20)
 
 ### Added
