@@ -25,6 +25,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.24 (2026-07-20)
+
+### Added
+- Automated Cloud Identity and Access Management (IAM) Attack Path Analysis
+
 ## Version 1.0.23 (2026-07-20)
 
 ### Added
