@@ -24,6 +24,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.23 (2026-07-20)
+
+### Added
+- Automated Cloud Secrets Exposure Scanner
+
 ## Version 1.0.22 (2026-07-19)
 
 ### Added
