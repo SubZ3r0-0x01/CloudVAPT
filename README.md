@@ -30,6 +30,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.29 (2026-07-21)
+
+### Added
+- Automated Cloud Storage Security Assessment
+
 ## Version 1.0.28 (2026-07-20)
 
 ### Added
