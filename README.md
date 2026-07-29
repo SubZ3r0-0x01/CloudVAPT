@@ -33,6 +33,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.32 (2026-07-30)
+
+### Added
+- Automated Cloud API Security Testing
+
 ## Version 1.0.31 (2026-07-21)
 
 ### Added
