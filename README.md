@@ -34,6 +34,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.33 (2026-08-01)
+
+### Added
+- Automated Cloud Secrets and Credential Leakage Scanner
+
 ## Version 1.0.32 (2026-07-30)
 
 ### Added
