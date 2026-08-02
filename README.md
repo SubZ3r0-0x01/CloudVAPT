@@ -36,6 +36,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.35 (2026-08-03)
+
+### Added
+- Automated Cloud Attack Surface Discovery and Resource Inventory Mapper
+
 ## Version 1.0.34 (2026-08-02)
 
 ### Added
