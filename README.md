@@ -38,6 +38,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.37 (2026-08-05)
+
+### Added
+- Automated Infrastructure-as-Code (IaC) Security Scanner
+
 ## Version 1.0.36 (2026-08-04)
 
 ### Added
