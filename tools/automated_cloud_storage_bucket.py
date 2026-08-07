@@ -1,6 +1,6 @@
 """
-Automated Cloud Storage Bucket Security Audit and Misconfiguration Scanner
-Automatically scans cloud storage buckets (AWS S3, Azure Blob, GCP Cloud Storage) for misconfigurations such as public read/write permissions, missing encryption, disabled versioning, and overly permissive ACLs. It generates a risk score and actionable remediation steps for each bucket.
+Automated Cloud Storage Bucket Security Scanner
+Scans cloud storage buckets (AWS S3, Azure Blob, GCP Cloud Storage) for misconfigurations such as public read/write permissions, weak bucket policies, unencrypted storage, and exposed access controls. This tool will simulate unauthorized access attempts to identify data leakage risks and verify write-access vulnerabilities for ransomware or tampering attacks.
 """
 
 import json
@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 
-class AutomatedCloudStorageBucketSecurityAuditAndMisconfigurationScanner:
-    """Main class for Automated Cloud Storage Bucket Security Audit and Misconfiguration Scanner"""
+class AutomatedCloudStorageBucketSecurityScanner:
+    """Main class for Automated Cloud Storage Bucket Security Scanner"""
     
     def __init__(self, config: Optional[Dict] = None):
         """Initialize the scanner"""
@@ -47,7 +47,7 @@ class AutomatedCloudStorageBucketSecurityAuditAndMisconfigurationScanner:
     def generate_report(self, output_file: str = "report.json") -> str:
         """Generate a JSON report"""
         report = {
-            "tool": "Automated Cloud Storage Bucket Security Audit and Misconfiguration Scanner",
+            "tool": "Automated Cloud Storage Bucket Security Scanner",
             "timestamp": self.timestamp,
             "total_scans": len(self.results),
             "results": self.results
@@ -71,7 +71,7 @@ class AutomatedCloudStorageBucketSecurityAuditAndMisconfigurationScanner:
 
 if __name__ == "__main__":
     # Example usage
-    scanner = AutomatedCloudStorageBucketSecurityAuditAndMisconfigurationScanner()
+    scanner = AutomatedCloudStorageBucketSecurityScanner()
     result = scanner.scan("example.com")
     scanner.generate_report()
     print(json.dumps(scanner.summary(), indent=2))
