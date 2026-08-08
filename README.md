@@ -41,6 +41,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.40 (2026-08-09)
+
+### Added
+- Automated Cloud Data-at-Rest Encryption and Key Management Security Scanner
+
 ## Version 1.0.39 (2026-08-08)
 
 ### Added
