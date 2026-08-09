@@ -42,6 +42,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.41 (2026-08-10)
+
+### Added
+- Automated Kubernetes and Container Security Scanner
+
 ## Version 1.0.40 (2026-08-09)
 
 ### Added
