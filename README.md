@@ -43,6 +43,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.42 (2026-08-11)
+
+### Added
+- Automated Cloud Attack Path Enumeration and Exploit Validator
+
 ## Version 1.0.41 (2026-08-10)
 
 ### Added
