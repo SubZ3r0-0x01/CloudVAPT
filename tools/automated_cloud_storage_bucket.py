@@ -1,6 +1,6 @@
 """
-Automated Cloud Storage Bucket Security Scanner
-Scans cloud storage buckets (AWS S3, Azure Blob, GCP Cloud Storage) for misconfigurations such as public read/write permissions, weak bucket policies, unencrypted storage, and exposed access controls. This tool will simulate unauthorized access attempts to identify data leakage risks and verify write-access vulnerabilities for ransomware or tampering attacks.
+Automated Cloud Storage Bucket Security Auditor
+Automated audit of cloud storage buckets (AWS S3, Azure Blob, GCP GCS) for public exposure, missing encryption, insecure access policies, and insufficient logging. Detects misconfigurations like world-readable buckets, unencrypted storage, and lack of versioning, providing actionable remediation guidance.
 """
 
 import json
@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 
-class AutomatedCloudStorageBucketSecurityScanner:
-    """Main class for Automated Cloud Storage Bucket Security Scanner"""
+class AutomatedCloudStorageBucketSecurityAuditor:
+    """Main class for Automated Cloud Storage Bucket Security Auditor"""
     
     def __init__(self, config: Optional[Dict] = None):
         """Initialize the scanner"""
@@ -47,7 +47,7 @@ class AutomatedCloudStorageBucketSecurityScanner:
     def generate_report(self, output_file: str = "report.json") -> str:
         """Generate a JSON report"""
         report = {
-            "tool": "Automated Cloud Storage Bucket Security Scanner",
+            "tool": "Automated Cloud Storage Bucket Security Auditor",
             "timestamp": self.timestamp,
             "total_scans": len(self.results),
             "results": self.results
@@ -71,7 +71,7 @@ class AutomatedCloudStorageBucketSecurityScanner:
 
 if __name__ == "__main__":
     # Example usage
-    scanner = AutomatedCloudStorageBucketSecurityScanner()
+    scanner = AutomatedCloudStorageBucketSecurityAuditor()
     result = scanner.scan("example.com")
     scanner.generate_report()
     print(json.dumps(scanner.summary(), indent=2))

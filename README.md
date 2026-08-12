@@ -44,6 +44,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.43 (2026-08-13)
+
+### Added
+- Automated Cloud Storage Bucket Security Auditor
+
 ## Version 1.0.42 (2026-08-11)
 
 ### Added
