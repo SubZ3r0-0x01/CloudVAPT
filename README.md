@@ -45,6 +45,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.44 (2026-08-14)
+
+### Added
+- Automated IAM Overprivileged Policy Analyzer
+
 ## Version 1.0.43 (2026-08-13)
 
 ### Added
