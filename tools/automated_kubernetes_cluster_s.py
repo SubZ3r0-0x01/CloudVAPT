@@ -1,6 +1,6 @@
 """
-Automated Kubernetes Cluster Security Scanner
-Scans Kubernetes clusters for insecure configurations, RBAC misconfigurations, exposed dashboards, and vulnerable container images. Performs automated checks aligned with the CIS Kubernetes Benchmark to identify high-risk attack paths.
+Automated Kubernetes Cluster Security and Penetration Testing Scanner
+This feature automatically assesses Kubernetes clusters across EKS, AKS, and GKE for common security misconfigurations, exposed dashboards, insecure RBAC, vulnerable admission controllers, and potential privilege escalation paths. It combines CIS benchmark checks with active penetration testing techniques like attempting to access sensitive resources or execute workloads with excessive permissions.
 """
 
 import json
@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 
-class AutomatedKubernetesClusterSecurityScanner:
-    """Main class for Automated Kubernetes Cluster Security Scanner"""
+class AutomatedKubernetesClusterSecurityAndPenetrationTestingScanner:
+    """Main class for Automated Kubernetes Cluster Security and Penetration Testing Scanner"""
     
     def __init__(self, config: Optional[Dict] = None):
         """Initialize the scanner"""
@@ -47,7 +47,7 @@ class AutomatedKubernetesClusterSecurityScanner:
     def generate_report(self, output_file: str = "report.json") -> str:
         """Generate a JSON report"""
         report = {
-            "tool": "Automated Kubernetes Cluster Security Scanner",
+            "tool": "Automated Kubernetes Cluster Security and Penetration Testing Scanner",
             "timestamp": self.timestamp,
             "total_scans": len(self.results),
             "results": self.results
@@ -71,7 +71,7 @@ class AutomatedKubernetesClusterSecurityScanner:
 
 if __name__ == "__main__":
     # Example usage
-    scanner = AutomatedKubernetesClusterSecurityScanner()
+    scanner = AutomatedKubernetesClusterSecurityAndPenetrationTestingScanner()
     result = scanner.scan("example.com")
     scanner.generate_report()
     print(json.dumps(scanner.summary(), indent=2))
