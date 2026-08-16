@@ -48,6 +48,12 @@ Cloud Vulnerability Assessment and Penetration Testing Tools
 
 
 
+
+## Version 1.0.47 (2026-08-17)
+
+### Added
+- Automated Cloud API Gateway Security Tester
+
 ## Version 1.0.46 (2026-08-16)
 
 ### Added

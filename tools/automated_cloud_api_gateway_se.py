@@ -1,6 +1,6 @@
 """
-Automated Cloud API Gateway Security Scanner
-Automatically discovers and assesses API Gateway configurations across cloud providers for common security misconfigurations, such as missing authentication, excessive request sizes, lack of rate limiting, insecure CORS policies, and exposure of sensitive endpoints. This feature simulates attacker-like probing against public API endpoints to identify exploitable weaknesses.
+Automated Cloud API Gateway Security Tester
+Scans AWS API Gateway, Azure API Management, and GCP API Gateway for security misconfigurations, authentication weaknesses, and common API vulnerabilities such as injection, broken object-level authorization, and excessive data exposure. It automatically attempts to exploit weak endpoints in a controlled manner and provides actionable remediation guidance.
 """
 
 import json
@@ -8,8 +8,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 
-class AutomatedCloudApiGatewaySecurityScanner:
-    """Main class for Automated Cloud API Gateway Security Scanner"""
+class AutomatedCloudApiGatewaySecurityTester:
+    """Main class for Automated Cloud API Gateway Security Tester"""
     
     def __init__(self, config: Optional[Dict] = None):
         """Initialize the scanner"""
@@ -47,7 +47,7 @@ class AutomatedCloudApiGatewaySecurityScanner:
     def generate_report(self, output_file: str = "report.json") -> str:
         """Generate a JSON report"""
         report = {
-            "tool": "Automated Cloud API Gateway Security Scanner",
+            "tool": "Automated Cloud API Gateway Security Tester",
             "timestamp": self.timestamp,
             "total_scans": len(self.results),
             "results": self.results
@@ -71,7 +71,7 @@ class AutomatedCloudApiGatewaySecurityScanner:
 
 if __name__ == "__main__":
     # Example usage
-    scanner = AutomatedCloudApiGatewaySecurityScanner()
+    scanner = AutomatedCloudApiGatewaySecurityTester()
     result = scanner.scan("example.com")
     scanner.generate_report()
     print(json.dumps(scanner.summary(), indent=2))
